@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dieta">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Dieta Rubens</title>
+<style>
+  :root{
+    color-scheme: light;
+    --bg: #F2F2F7;
+    --card: #FFFFFF;
+    --label: #000000;
+    --label-secondary: rgba(60,60,67,0.6);
+    --label-tertiary: rgba(60,60,67,0.3);
+    --separator: rgba(60,60,67,0.16);
+    --blue: #007AFF;
+    --orange: #FF9500;
+    --green: #34C759;
+    --yellow: #FFCC00;
+    --red: #FF3B30;
+    --purple: #AF52DE;
+    --fill-seg: rgba(118,118,128,0.12);
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --sab-top: env(safe-area-inset-top, 0px);
+    --sab-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--label);
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Inter, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom: calc(66px + var(--sab-bottom));
+  }
+  .bottom-nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:30; display:flex;
+    background:rgba(242,242,247,0.92);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top:0.5px solid var(--separator);
+    padding-bottom: var(--sab-bottom);
+  }
+  .bottom-nav-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:7px 0 6px; background:none; border:none; font-family:inherit;
+    color:var(--label-tertiary); font-size:11px; font-weight:600;
+  }
+  .bottom-nav-btn.active{ color:var(--blue); }
+  .bottom-nav-btn .nav-dot{ position:static; display:none; width:6px; height:6px; margin-left:3px; vertical-align:top; }
+  .bottom-nav-btn .nav-dot.show{ display:inline-block; }
+
+  .navbar{
+    position:sticky; top:0; z-index:20;
+    background: rgba(242,242,247,0.86);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    padding-top: var(--sab-top);
+    border-bottom: 0.5px solid var(--separator);
+  }
+  .navbar .title-row{ padding: 6px 16px 2px; }
+  .navbar h1{ font-size: 28px; font-weight:700; letter-spacing:-0.02em; margin:4px 0 10px; }
+  .navbar .subtitle{ font-size:13px; color:var(--label-secondary); margin:-8px 0 12px; }
+  .navbar #navbarStuckPager{ padding-top:10px; margin:0 16px 14px; }
+
+  .nav-dot{
+    display:none; position:absolute; top:2px; right:10px; width:7px; height:7px;
+    border-radius:50%; background:var(--orange);
+  }
+  .nav-dot.show{ display:block; }
+
+  main{ max-width:600px; margin:0 auto; padding: 16px 0 0; }
+  section.view{ display:none; }
+  section.view.active{ display:block; animation:rise .2s ease; }
+  @keyframes rise{ from{opacity:0; transform:translateY(5px);} to{opacity:1; transform:none;} }
+
+  .group{ margin: 0 16px 24px; }
+  .group-header{
+    font-size:13px; font-weight:600; color:var(--label-secondary);
+    text-transform:uppercase; letter-spacing:0.02em; margin: 0 4px 6px; padding-top: 18px;
+  }
+  .group-header.first{ padding-top:0; }
+  .group-footer{ font-size:13px; color:var(--label-secondary); margin: 6px 4px 0; line-height:1.4; }
+  .card-list{ background:var(--card); border-radius:var(--radius-lg); overflow:hidden; }
+
+  /* ---- day pager (shared cardápio + planner) ---- */
+  .pager{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin: 0 16px 14px;
+  }
+  .pager-btn{
+    width:36px; height:36px; border-radius:50%; border:none; background:var(--card);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    font-size:16px; font-weight:700; color:var(--blue);
+  }
+  .pager-btn:disabled{ color:var(--label-tertiary); }
+  .pager-btn:active:not(:disabled){ background:#e9e9ec; }
+  .pager-title{ text-align:center; flex:1; }
+  .pager-title .name{ font-size:19px; font-weight:700; letter-spacing:-0.01em; display:block; }
+  .pager-title .sub{ font-size:12.5px; color:var(--label-secondary); }
+  .pager-sm{ margin:0 16px 16px; }
+  .pager-sm .pager-btn{ width:40px; height:40px; font-size:18px; }
+  .pager-sm .pager-title .name{ font-size:19px; font-weight:700; }
+
+  .pill-row{
+    display:flex; gap:6px; margin: 0 16px 16px; justify-content:space-between;
+  }
+  .pill-row .pill{
+    flex:1; border:none; background:var(--card); color:var(--label-secondary);
+    font-size:12px; font-weight:600; padding:8px 0; border-radius:10px; font-family:inherit;
+  }
+  .pill-row .pill.active{ background:var(--blue); color:#fff; }
+
+  .meal-card{
+    display:flex; align-items:center; gap:11px; margin-bottom:12px;
+    background:var(--card); border-radius:var(--radius-lg); padding:13px 14px;
+  }
+  .meal-card:last-child{ margin-bottom:0; }
+  .meal-card.is-done{ opacity:0.55; }
+  .meal-card.is-done .meal-desc-preview{ text-decoration:line-through; }
+  .meal-card.is-done .meal-tap{ pointer-events:none; }
+  .meal-card.is-done .drag-handle{ pointer-events:none; }
+  .meal-card-empty{ background:none; border:1.5px dashed var(--label-tertiary); }
+  .meal-card-empty .meal-name{ color:var(--label-secondary); }
+  .empty-hint{ color:var(--blue); font-weight:600; }
+  .meal-card.next-meal{ box-shadow: 0 0 0 1.5px var(--blue); }
+  .meal-tap{
+    flex:1; min-width:0; display:flex; align-items:center; gap:12px; text-align:left;
+    background:none; border:none; padding:0; font-family:inherit;
+  }
+  .meal-tap:active{ opacity:0.6; }
+  .meal-body{ flex:1; min-width:0; }
+  .meal-top-line{ display:flex; align-items:center; gap:6px; margin-bottom:2px; }
+  .meal-name-wrap{ display:flex; align-items:center; gap:6px; min-width:0; }
+  .kcal-badge{
+    font-size:10.5px; font-weight:700; color:var(--label-secondary); background:var(--bg);
+    padding:2px 7px; border-radius:999px; flex-shrink:0;
+  }
+  .changed-badge{
+    font-size:10px; font-weight:700; color:#fff; background:var(--orange);
+    padding:2px 6px; border-radius:999px; flex-shrink:0; text-transform:uppercase; letter-spacing:.02em;
+  }
+  .meal-desc-preview{
+    font-size:13.5px; color:var(--label); line-height:1.35;
+  }
+  .done-circle{
+    width:24px; height:24px; border-radius:50%; border:1.5px solid var(--label-tertiary);
+    background:none; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition: all .15s ease; cursor:pointer;
+  }
+  .done-circle.on{ background:var(--green); border-color:var(--green); }
+  .done-circle:disabled{ opacity:0.3; cursor:default; }
+  .done-circle svg{ opacity:0; transform:scale(0.5); transition: all .15s ease; }
+  .done-circle.on svg{ opacity:1; transform:scale(1); }
+  .cardapio-hint{ font-size:12.5px; color:var(--label-secondary); margin:0 16px 14px; }
+  .advance-week-link{
+    display:block; width:fit-content; margin:0 16px 14px; padding:0; border:none; background:none;
+    color:var(--blue); font-family:inherit; font-size:13px; font-weight:600;
+  }
+  .compras-summary{ font-size:13px; color:var(--label-secondary); font-weight:600; margin:0 16px 14px; }
+  .meal-chevron{ color:var(--label-tertiary); flex-shrink:0; margin-left:2px; }
+  .drag-handle{
+    width:22px; height:32px; display:flex; align-items:center; justify-content:center;
+    color:var(--label-tertiary); flex-shrink:0; cursor:grab; touch-action:none;
+  }
+  .meal-card.dragging{
+    position:relative; z-index:6; box-shadow:0 8px 20px rgba(0,0,0,0.18);
+  }
+  .meal-card.drag-target-above{ box-shadow: inset 0 2px 0 var(--blue); }
+  .meal-card.drag-target-below{ box-shadow: inset 0 -2px 0 var(--blue); }
+
+  .option-row{
+    display:flex; align-items:center; gap:12px; padding:13px 14px; font-size:15px; min-height:44px;
+    border-bottom:0.5px solid var(--separator); background:var(--card); cursor:pointer;
+  }
+  .option-row:first-child{ border-radius:var(--radius-lg) var(--radius-lg) 0 0; }
+  .option-row:last-child{ border-bottom:none; border-radius:0 0 var(--radius-lg) var(--radius-lg); }
+  .option-row:only-child{ border-radius:var(--radius-lg); }
+  .option-row input[type=radio]{ width:20px; height:20px; accent-color:var(--blue); flex-shrink:0; }
+  .select-label{ font-size:13px; font-weight:600; color:var(--label-secondary); margin: 16px 2px 6px; text-transform:uppercase; letter-spacing:.02em; }
+  .option-group{ border-radius:var(--radius-lg); overflow:hidden; }
+  .special-toggle-row{
+    display:flex; align-items:center; justify-content:space-between; padding:10px 4px; margin-top:10px;
+    border-top:0.5px solid var(--separator);
+  }
+  .switch{ position:relative; width:46px; height:28px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch .slider{
+    position:absolute; inset:0; background:var(--label-tertiary); border-radius:999px; transition:.2s;
+  }
+  .switch .slider:before{
+    content:""; position:absolute; width:24px; height:24px; left:2px; top:2px; background:#fff;
+    border-radius:50%; transition:.2s;
+  }
+  .switch input:checked + .slider{ background:var(--green); }
+  .switch input:checked + .slider:before{ transform:translateX(18px); }
+
+  .alert-banner{
+    background:#fff3e0; border:1px solid #ffd9a0; border-radius:var(--radius-lg);
+    padding:13px 16px; margin:0 16px 18px; font-size:13.5px; color:#8a5300; line-height:1.4;
+  }
+  .alert-banner strong{ display:block; margin-bottom:3px; font-size:14px; }
+  .meal-body{ flex:1; min-width:0; }
+  .meal-name{ font-size:12.5px; font-weight:600; color:var(--label-secondary); margin-bottom:2px; text-transform:uppercase; letter-spacing:0.02em; }
+  .meal-desc{ font-size:15.5px; color:var(--label); line-height:1.38; }
+
+  /* ---- shopping list ---- */
+  .float-badge{
+    position:fixed; top: calc(var(--sab-top) + 8px); right:12px; z-index:25;
+    background:rgba(255,255,255,0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-radius:999px; padding:6px 12px; box-shadow:0 2px 8px rgba(0,0,0,0.12);
+    font-size:11.5px; font-weight:600; color:var(--label); display:flex; align-items:center; gap:6px;
+    line-height:1.1;
+  }
+  .float-badge .fb-total{ color:var(--green); font-weight:700; }
+  .float-badge{ cursor:pointer; }
+
+  .sheet-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.38); z-index:40;
+    align-items:flex-end; justify-content:center;
+  }
+  .sheet-overlay.open{ display:flex; }
+  .sheet{
+    background:var(--bg); width:100%; max-width:600px; border-radius:20px 20px 0 0;
+    padding: 10px 16px calc(20px + var(--sab-bottom)); transform:translateY(100%);
+    transition: transform .28s cubic-bezier(.3,.9,.4,1); max-height:80vh; overflow-y:auto;
+  }
+  .sheet-overlay.open .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:36px; height:5px; border-radius:3px; background:var(--label-tertiary); margin:4px auto 14px; }
+  .sheet-title{ font-size:18px; font-weight:700; margin-bottom:14px; }
+  .sheet-close{
+    width:100%; border:none; border-radius:var(--radius-lg); padding:13px; font-size:15.5px;
+    font-weight:600; font-family:inherit; background:var(--card); color:var(--blue); margin-top:16px;
+  }
+
+  .summary-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; background:var(--card); border-radius:var(--radius-lg); padding:14px 16px; }
+  .summary-top .count{ font-size:15px; font-weight:600; }
+  .summary-top .total{ font-size:19px; font-weight:700; color:var(--green); }
+  .summary-list .cat-group{ background:var(--card); border-radius:var(--radius-lg); padding:4px 16px; margin-bottom:12px; }
+  .summary-list .cat-header{
+    font-size:11.5px; font-weight:700; color:var(--label-secondary); text-transform:uppercase;
+    letter-spacing:0.03em; padding:9px 0 4px;
+  }
+  .summary-list .srow{ display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:14px; }
+  .summary-list .srow + .srow{ border-top:0.5px solid var(--separator); }
+  .summary-list .srow span.n{ color:var(--label); }
+  .summary-list .srow .price-val{ color:var(--label-secondary); font-size:13px; }
+  .summary-list .check-ic{
+    width:18px; height:18px; border-radius:50%; background:var(--green);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .summary-empty{ font-size:13.5px; color:var(--label-tertiary); font-style:italic; }
+
+  .shop-row{
+    display:flex; align-items:center; gap:10px; padding:11px 16px; min-height:46px;
+    border-bottom:0.5px solid var(--separator);
+  }
+  .shop-row:last-child{ border-bottom:none; }
+  .check{
+    width:24px; height:24px; border-radius:50%; border:1.5px solid var(--label-tertiary);
+    flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    transition: all .15s ease; cursor:pointer;
+  }
+  .check svg{ opacity:0; transform:scale(0.5); transition: all .15s ease; }
+  .shop-row.checked .check{ background:var(--green); border-color:var(--green); }
+  .shop-row.checked .check svg{ opacity:1; transform:scale(1); }
+  .shop-text{ flex:1; min-width:0; cursor:pointer; }
+  .shop-row.checked .shop-name{ color:var(--label-tertiary); text-decoration:line-through; }
+  .shop-name{ font-size:15.5px; display:block; }
+  .shop-qty{ font-size:12.5px; color:var(--label-secondary); display:block; margin-top:1px; }
+  .price-input{
+    width:72px; flex-shrink:0; border:none; background:var(--bg); border-radius:8px;
+    padding:7px 8px; font-size:14px; text-align:right; font-family:inherit; color:var(--label);
+  }
+  .price-input::placeholder{ color:var(--label-tertiary); }
+
+  .reset-row{
+    text-align:center; padding:13px; font-size:15px; color:var(--red); font-weight:500;
+    background:var(--card); border-radius:var(--radius-lg); margin: 0 16px 10px;
+  }
+  .reset-row:active{ background:#f1f1f3; }
+  .reset-row.disabled{ color:var(--label-tertiary); pointer-events:none; }
+
+  /* ---- planner ---- */
+  .jump-grid{
+    display:flex; flex-wrap:wrap; gap:6px; margin: 0 16px 16px; background:var(--card);
+    padding:12px; border-radius:var(--radius-lg);
+  }
+  .jump-dot{
+    width:28px; height:28px; border-radius:8px; border:none; background:var(--bg);
+    font-size:12px; font-weight:600; color:var(--label-secondary); font-family:inherit;
+  }
+  .jump-dot.confirmed{ background:var(--green); color:#fff; }
+  .jump-dot.locked{ opacity:0.35; pointer-events:none; }
+  .jump-dot.active{ background:var(--blue); color:#fff; box-shadow:0 0 0 2px #fff, 0 0 0 3.5px var(--blue); }
+
+  .confirm-wrap{ margin: 2px 16px 20px; }
+  .confirm-btn{
+    width:100%; border:none; border-radius:var(--radius-lg); padding:14px; font-size:15.5px;
+    font-weight:600; font-family:inherit; background:var(--blue); color:#fff;
+  }
+  .confirm-btn:active{ background:#0062cc; }
+  .confirm-btn:disabled{ background:var(--label-tertiary); color:#fff; opacity:0.6; }
+  .confirm-btn.done{
+    background:var(--green); display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+
+  .habit-row{
+    display:flex; align-items:center; gap:12px; padding:13px 16px;
+    border-bottom:0.5px solid var(--separator);
+  }
+  .habit-row:last-child{ border-bottom:none; }
+  .habit-row input.habit-label{
+    border:none; background:transparent; font:inherit; font-weight:600; font-size:15px;
+    color:var(--label); flex:1; min-width:0; padding:0;
+  }
+  .habit-row .habit-name{ flex:1; font-size:15.5px; min-width:0; }
+  .status-btn{
+    flex-shrink:0; border:none; border-radius:999px; padding:7px 14px; font-size:13px;
+    font-weight:600; font-family:inherit; min-width:76px; text-align:center;
+    background:var(--bg); color:var(--label-secondary);
+  }
+  .status-btn.g{ background:var(--green); color:#fff; }
+  .status-btn.y{ background:var(--yellow); color:#7a5b00; }
+  .status-btn.r{ background:var(--red); color:#fff; }
+
+  .legend-strip{ display:flex; gap:16px; margin: 0 16px 24px; flex-wrap:wrap; font-size:12.5px; color:var(--label-secondary); }
+  .legend-strip .sw{ display:flex; align-items:center; gap:6px; }
+  .legend-strip .dotmini{ width:12px; height:12px; border-radius:50%; }
+
+  .report-row{
+    display:flex; justify-content:space-between; align-items:center; padding:13px 16px;
+    border-bottom:0.5px solid var(--separator); font-size:15px;
+  }
+  .report-row:last-child{ border-bottom:none; }
+  .report-row .r-date{ font-weight:600; }
+  .report-row .r-sub{ font-size:12px; color:var(--label-secondary); display:block; margin-top:1px; font-weight:400; }
+  .report-row .r-total{ font-weight:600; color:var(--green); }
+  .report-empty{ padding:22px 16px; text-align:center; color:var(--label-tertiary); font-size:14px; }
+
+  .shop-row.needs-buy{
+    border:1.5px solid var(--orange); border-radius:12px; margin:6px 8px; background:#fff8ef;
+  }
+  .shop-row.needs-buy:last-child{ margin-bottom:6px; }
+
+  footer.page-footer{ text-align:center; color:var(--label-tertiary); font-size:12px; padding: 10px 24px 4px; }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="title-row" id="navbarTitleRow">
+    <h1>Dieta</h1>
+    <p class="subtitle">Rubens · plano de Juscélio Araújo · 1750 kcal/dia</p>
+  </div>
+  <div class="pager pager-sm" id="navbarStuckPager" style="display:none;">
+    <button class="pager-btn week-prev">‹</button>
+    <div class="pager-title"><span class="name week-pager-label">Semana atual</span></div>
+    <button class="pager-btn week-next">›</button>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="swapOverlay">
+  <div class="sheet" id="swapSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="swapTitle">Trocar refeição</div>
+    <div id="swapBody"></div>
+    <button class="confirm-btn" id="swapConfirmBtn" style="margin-top:16px;">Confirmar troca</button>
+    <button class="confirm-btn" id="swapKeepBtn" style="margin-top:10px; background:var(--bg); color:var(--label); display:none;">Usar a mesma refeição da semana atual</button>
+    <button class="confirm-btn" id="swapRestoreBtn" style="margin-top:10px; background:var(--bg); color:var(--label); display:none;">Restaurar refeição original</button>
+    <button class="sheet-close" id="swapCloseBtn">Cancelar</button>
+  </div>
+</div>
+
+<main>
+
+  <!-- CARDÁPIO -->
+  <section class="view active" id="cardapio">
+
+    <div class="pager pager-sm">
+      <button class="pager-btn week-prev">‹</button>
+      <div class="pager-title"><span class="name week-pager-label">Semana atual</span></div>
+      <button class="pager-btn week-next">›</button>
+    </div>
+
+    <div class="pill-row" id="dayPills"></div>
+
+    <p class="cardapio-hint" id="cardapioHint">Toque numa refeição para trocar o prato. Arraste a vitamina para reordenar.</p>
+
+    <button class="advance-week-link" id="repeatDayBtn" style="display:none; margin:0 16px 10px;">Repetir este dia da semana atual</button>
+
+    <div class="group" id="unplannedPrompt" style="display:none; padding:20px 16px; text-align:center;">
+      <p style="font-size:14px; color:var(--label-secondary); margin:0 0 16px; line-height:1.4;">
+        A próxima semana ainda não foi planejada. Repita a semana atual como ponto de partida ou monte o cardápio manualmente, refeição por refeição.
+      </p>
+      <button class="confirm-btn" id="repeatWeekBtn" style="margin-bottom:10px;">Repetir semana atual</button>
+      <button class="confirm-btn" id="manualWeekBtn" style="background:var(--bg); color:var(--label);">Montar manualmente</button>
+    </div>
+
+    <div class="group" style="margin-bottom:4px;" id="dayMealsGroup">
+      <div id="dayMeals"></div>
+    </div>
+
+    <div class="confirm-wrap" id="createShoppingListWrap" style="display:none;">
+      <button class="confirm-btn" id="createShoppingListBtn">Criar lista de compras desta semana</button>
+    </div>
+
+  </section>
+
+  <!-- COMPRAS -->
+  <section class="view" id="compras">
+
+    <div class="pager pager-sm">
+      <button class="pager-btn week-prev">‹</button>
+      <div class="pager-title"><span class="name week-pager-label">Semana atual</span></div>
+      <button class="pager-btn week-next">›</button>
+    </div>
+
+    <div class="group" id="comprasUnplanned" style="display:none; padding:20px 16px; text-align:center;">
+      <p style="font-size:14px; color:var(--label-secondary); margin:0; line-height:1.4;">
+        A próxima semana ainda não foi planejada. Monte o cardápio dela na aba Cardápio para a lista de compras aparecer aqui.
+      </p>
+    </div>
+
+    <div id="comprasSection">
+
+    <div class="compras-summary"><span id="comprasEntryCount">0/25</span> marcados · <span id="comprasEntryTotal">R$ 0,00</span></div>
+
+    <div id="extrasBanner"></div>
+
+    <div class="group" id="extrasGroup" style="display:none;">
+      <div class="group-header first">Itens extras · trocas de refeição</div>
+      <div class="card-list" id="extrasList"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-header first">Açougue</div>
+      <div class="card-list">
+        <div class="shop-row" data-key="frango" data-name="Peito de frango" data-category="Açougue"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Peito de frango</span><span class="shop-qty">≈ 1,9 kg crus</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="carne" data-name="Carne bovina" data-category="Açougue"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Patinho, alcatra, lagarto, filé ou carne moída</span><span class="shop-qty">≈ 1,3 kg crus — qualquer um desses cortes vale, pela dieta</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-header">Hortifruti</div>
+      <div class="card-list">
+        <div class="shop-row" data-key="mandioquinha" data-name="Mandioquinha" data-category="Hortifruti"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Mandioquinha</span><span class="shop-qty">550 g</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="batata" data-name="Batata inglesa" data-category="Hortifruti"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Batata inglesa</span><span class="shop-qty">250 g</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="alface" data-name="Alface" data-category="Hortifruti"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Alface</span><span class="shop-qty">1 pé</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="rucula" data-name="Rúcula" data-category="Hortifruti"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Rúcula</span><span class="shop-qty">1 maço</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="acelga" data-name="Acelga" data-category="Hortifruti"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Acelga</span><span class="shop-qty">1 maço</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="tomate" data-name="Tomate" data-category="Hortifruti"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Tomate</span><span class="shop-qty">4 unidades</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="cenoura" data-name="Cenoura" data-category="Hortifruti"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Cenoura</span><span class="shop-qty">1 unidade</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-header">Congelados</div>
+      <div class="card-list">
+        <div class="shop-row" data-key="verdes-cong" data-name="Verdes congelados" data-category="Congelados"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Brócolis, couve ou espinafre congelado</span><span class="shop-qty">2 pacotes</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-header">Mercearia</div>
+      <div class="card-list">
+        <div class="shop-row" data-key="arroz" data-name="Arroz" data-category="Mercearia"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Arroz</span><span class="shop-qty">para a semana</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="macarrao" data-name="Macarrão" data-category="Mercearia"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Macarrão</span><span class="shop-qty">1 pacote de 260 g</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="wrap" data-name="Wrap (rapi10)" data-category="Mercearia"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Wrap (rapi10)</span><span class="shop-qty">4 unidades, ou use pão de forma</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="aveia" data-name="Aveia em flocos" data-category="Mercearia"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Aveia em flocos</span><span class="shop-qty">só se não tiver</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="pasta-amendoim" data-name="Pasta de amendoim" data-category="Mercearia"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Pasta de amendoim integral</span><span class="shop-qty">só se não tiver</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="castanhas" data-name="Sementes e castanhas" data-category="Mercearia"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Sementes e castanhas</span><span class="shop-qty">pequena quantidade, para a farofa</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-header">Padaria</div>
+      <div class="card-list">
+        <div class="shop-row" data-key="pao" data-name="Pão de forma integral" data-category="Padaria"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Pão de forma integral</span><span class="shop-qty">1 pacote (≈16 fatias)</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-header">Ovos e laticínios</div>
+      <div class="card-list">
+        <div class="shop-row" data-key="ovos" data-name="Ovos" data-category="Ovos e laticínios"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Ovos</span><span class="shop-qty">24 na semana</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="leite" data-name="Leite desnatado" data-category="Ovos e laticínios"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Leite desnatado</span><span class="shop-qty">1,5 litro</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="requeijao" data-name="Requeijão light" data-category="Ovos e laticínios"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Requeijão light</span><span class="shop-qty">1 pote, usado nos 4 wraps de frango</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="queijo" data-name="Queijo mussarela" data-category="Ovos e laticínios"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Queijo mussarela</span><span class="shop-qty">4 fatias</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-header">Suplementos</div>
+      <div class="card-list">
+        <div class="shop-row" data-key="whey" data-name="Whey protein" data-category="Suplementos"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Whey protein</span><span class="shop-qty">confirmar se cobre 7 porções</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+        <div class="shop-row" data-key="creatina" data-name="Creatina" data-category="Suplementos"><div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="shop-text"><span class="shop-name">Creatina</span><span class="shop-qty">3 g/dia, prescrita</span></div><input class="price-input" inputmode="decimal" placeholder="R$"></div>
+      </div>
+    </div>
+
+    <div class="reset-row" id="resetShop">Desmarcar tudo</div>
+
+    </div>
+
+  </section>
+
+  <!-- PLANNER -->
+  <section class="view" id="planner">
+
+    <div class="pager">
+      <button class="pager-btn" id="planPrev">‹</button>
+      <div class="pager-title"><span class="name" id="planName">Dia 1</span><span class="sub" id="planSub">Dia 1 de 30 do plano</span></div>
+      <button class="pager-btn" id="planNext">›</button>
+    </div>
+
+    <div class="jump-grid" id="jumpGrid"></div>
+
+    <div class="group" style="margin-bottom:10px;">
+      <div class="card-list" id="habitList"></div>
+    </div>
+
+    <div class="confirm-wrap">
+      <button class="confirm-btn" id="confirmDayBtn">Confirmar preenchimento do dia</button>
+    </div>
+
+    <div class="legend-strip">
+      <span class="sw"><span class="dotmini" style="background:var(--green);"></span> Concluída</span>
+      <span class="sw"><span class="dotmini" style="background:var(--yellow);"></span> Parcial</span>
+      <span class="sw"><span class="dotmini" style="background:var(--red);"></span> Falha</span>
+    </div>
+  </section>
+
+  <footer class="page-footer">"Quem não deve, não teme." — Juscélio Araújo, CRN 7-4266</footer>
+</main>
+
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bottom-nav-btn active" data-tab="cardapio">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 3v8M6 3c-1.5 0-2.5 1-2.5 2.5V9c0 1.5 1 2.5 2.5 2.5M6 3c1.5 0 2.5 1 2.5 2.5V9c0 1.5-1 2.5-2.5 2.5M6 11.5V21M12 3v6a3 3 0 006 0V3M15 9v12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Cardápio</span>
+  </button>
+  <button class="bottom-nav-btn" data-tab="compras">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 6h15l-1.5 9h-12z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M6 6L5 3H2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="19" r="1.5" fill="currentColor"/><circle cx="18" cy="19" r="1.5" fill="currentColor"/></svg>
+    <span>Compras<span class="nav-dot" id="comprasDot"></span></span>
+  </button>
+  <button class="bottom-nav-btn" data-tab="planner">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M8 12l2.5 2.5L16 9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Controle</span>
+  </button>
+</nav>
+
+<script>
+(function(){
+  // ---- bottom nav ----
+  var bottomNav = document.getElementById('bottomNav');
+  var buttons = bottomNav.querySelectorAll('.bottom-nav-btn');
+  var navbarEl = document.querySelector('.navbar');
+  var navbarTitleRow = document.getElementById('navbarTitleRow');
+  var navbarStuckPager = document.getElementById('navbarStuckPager');
+  var currentTab = 'cardapio';
+  var pagerStuck = false;
+
+  function updateStuckPager(){
+    var activeSection = document.getElementById(currentTab);
+    var inlinePager = activeSection ? activeSection.querySelector('.pager.pager-sm') : null;
+    if(!inlinePager){
+      if(pagerStuck){ pagerStuck = false; navbarTitleRow.style.display = 'block'; navbarStuckPager.style.display = 'none'; }
+      return;
+    }
+    var shouldStick = inlinePager.getBoundingClientRect().top <= navbarEl.getBoundingClientRect().bottom;
+    if(shouldStick !== pagerStuck){
+      pagerStuck = shouldStick;
+      navbarTitleRow.style.display = shouldStick ? 'none' : 'block';
+      navbarStuckPager.style.display = shouldStick ? 'flex' : 'none';
+    }
+  }
+  window.addEventListener('scroll', updateStuckPager, { passive:true });
+
+  buttons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      buttons.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('section.view').forEach(function(v){ v.classList.remove('active'); });
+      document.getElementById(btn.dataset.tab).classList.add('active');
+      currentTab = btn.dataset.tab;
+      window.scrollTo(0,0);
+      pagerStuck = false;
+      navbarTitleRow.style.display = 'block';
+      navbarStuckPager.style.display = 'none';
+      updateStuckPager();
+    });
+  });
+
+  // ================= CARDÁPIO =================
+  var dayNames = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+  var dayShort = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  var meals = [
+    [ {i:'cafe',e:'🍳',n:'Café',d:'3 ovos inteiros + 2 fatias de pão de forma integral'},
+      {i:'almoco',e:'🍗',n:'Almoço',d:'Frango grelhado 150 g + arroz 100 g + legumes verdes + salada crua'},
+      {i:'lanche',e:'🌯',n:'Lanche',d:'Wrap (rapi10) ou 2 fatias de pão de forma + 80 g de frango desfiado com requeijão + salada'},
+      {i:'jantar',e:'🍔',n:'Jantar',d:'Hambúrguer artesanal de patinho 120 g + 2 fatias de pão de forma + 1 fatia de queijo + salada'} ],
+    [ {i:'cafe',e:'🍳',n:'Café',d:'2 ovos mexidos + 1 fatia de queijo mussarela + 2 fatias de pão de forma integral'},
+      {i:'almoco',e:'🥩',n:'Almoço',d:'Alcatra 150 g + batata inglesa 250 g + legumes verdes + salada crua'},
+      {i:'lanche',e:'🍳',n:'Lanche',d:'Farofa de ovo — 2 ovos mexidos + 1 colher de sopa de farofa caseira com sementes e castanhas'},
+      {i:'jantar',e:'🍗',n:'Jantar',d:'Frango grelhado 150 g + arroz 80 g + salada'} ],
+    [ {i:'cafe',e:'🍳',n:'Café',d:'3 ovos inteiros + 2 fatias de pão de forma integral'},
+      {i:'almoco',e:'🍗',n:'Almoço',d:'Frango desfiado 150 g + mandioquinha 250 g + legumes verdes + salada crua'},
+      {i:'lanche',e:'🌯',n:'Lanche',d:'Wrap (rapi10) ou 2 fatias de pão de forma + 80 g de frango desfiado com requeijão + salada'},
+      {i:'jantar',e:'🍝',n:'Jantar',d:'Carne moída 150 g + macarrão 80 g + salada'} ],
+    [ {i:'cafe',e:'🍳',n:'Café',d:'2 ovos mexidos + 1 fatia de queijo mussarela + 2 fatias de pão de forma integral'},
+      {i:'almoco',e:'🥩',n:'Almoço',d:'Patinho 150 g + arroz 100 g + legumes verdes + salada crua'},
+      {i:'lanche',e:'🍳',n:'Lanche',d:'Farofa de ovo — 2 ovos mexidos + 1 colher de sopa de farofa caseira com sementes e castanhas'},
+      {i:'jantar',e:'🍗',n:'Jantar',d:'Frango grelhado 150 g + mandioquinha 150 g + salada'} ],
+    [ {i:'cafe',e:'🍳',n:'Café',d:'3 ovos inteiros + 2 fatias de pão de forma integral'},
+      {i:'almoco',e:'🍗',n:'Almoço',d:'Frango grelhado 150 g + arroz integral 100 g + legumes verdes + salada crua'},
+      {i:'lanche',e:'🌯',n:'Lanche',d:'Wrap (rapi10) ou 2 fatias de pão de forma + 80 g de frango desfiado com requeijão + salada'},
+      {i:'jantar',e:'🥩',n:'Jantar',d:'Alcatra 150 g + macarrão 80 g + salada'} ],
+    [ {i:'cafe',e:'🍳',n:'Café',d:'2 ovos mexidos + 1 fatia de queijo mussarela + 2 fatias de pão de forma integral'},
+      {i:'almoco',e:'🍝',n:'Almoço',d:'Carne moída 150 g + macarrão 100 g + legumes verdes + salada crua'},
+      {i:'lanche',e:'🍳',n:'Lanche',d:'Farofa de ovo — 2 ovos mexidos + 1 colher de sopa de farofa caseira com sementes e castanhas'},
+      {i:'jantar',e:'🍗',n:'Jantar',d:'Frango grelhado 150 g + arroz 80 g + salada'} ],
+    [ {i:'cafe',e:'🍳',n:'Café',d:'3 ovos inteiros + 2 fatias de pão de forma integral'},
+      {i:'almoco',e:'🍗',n:'Almoço',d:'Frango desfiado 150 g + arroz integral 100 g + legumes verdes + salada crua'},
+      {i:'lanche',e:'🌯',n:'Lanche',d:'Wrap (rapi10) ou 2 fatias de pão de forma + 80 g de frango desfiado com requeijão + salada'},
+      {i:'jantar',e:'🥩',n:'Jantar',d:'Patinho 150 g + mandioquinha 150 g + salada'} ]
+  ];
+
+  var KCAL = { cafe:396, almoco:458, lanche:260, jantar:386 };
+  var SLOT_LABELS = { cafe:'Café da manhã', almoco:'Almoço', lanche:'Lanche da tarde', jantar:'Jantar' };
+
+  var PROTEIN_OPTS = [
+    {id:'frango_grelhado', label:'Frango grelhado', tags:['frango']},
+    {id:'frango_desfiado', label:'Frango desfiado', tags:['frango']},
+    {id:'frango_cozido', label:'Frango cozido', tags:['frango']},
+    {id:'alcatra', label:'Alcatra', tags:['carne']},
+    {id:'patinho', label:'Patinho', tags:['carne']},
+    {id:'lagarto', label:'Lagarto', tags:['carne']},
+    {id:'file', label:'Filé', tags:['carne']},
+    {id:'carne_moida', label:'Carne moída', tags:['carne']},
+    {id:'peixe', label:'Peixe grelhado', tags:['peixe']},
+    {id:'camarao', label:'Camarão', tags:['camarao']}
+  ];
+  var CARB_OPTS = [
+    {id:'arroz_branco', label:'Arroz branco', g:{almoco:'100 g', jantar:'80 g'}, tags:['arroz']},
+    {id:'arroz_integral', label:'Arroz integral', g:{almoco:'100 g', jantar:'80 g'}, tags:['arroz']},
+    {id:'mandioquinha', label:'Mandioquinha', g:{almoco:'250 g', jantar:'150 g'}, tags:['mandioquinha']},
+    {id:'batata', label:'Batata inglesa', g:{almoco:'250 g', jantar:'150 g'}, tags:['batata']},
+    {id:'macarrao', label:'Macarrão', g:{almoco:'100 g', jantar:'80 g'}, tags:['macarrao']}
+  ];
+  var CAFE_OPTS = [
+    {id:'c1', label:'3 ovos inteiros + 2 fatias de pão de forma integral', tags:['ovos','pao']},
+    {id:'c2', label:'2 ovos mexidos + 1 fatia de queijo mussarela + 2 fatias de pão de forma integral', tags:['ovos','queijo','pao']},
+    {id:'c3', label:'2 ovos cozidos + 1 colher de sobremesa de requeijão + 2 fatias de pão de forma integral', tags:['ovos','requeijao','pao']},
+    {id:'c4', label:'70 g de frango desfiado + 1 colher de requeijão (tipo patê) + 2 fatias de pão de forma integral', tags:['frango','requeijao','pao']},
+    {id:'c5', label:'3 colheres de sopa de atum + 1 colher de requeijão (tipo patê) + 2 fatias de pão de forma integral', tags:['atum','requeijao','pao']}
+  ];
+  var LANCHE_OPTS = [
+    {id:'wrap_frango', label:'Wrap (rapi10) ou 2 fatias de pão de forma + 80 g de frango desfiado com requeijão + salada', tags:['frango','requeijao','pao']},
+    {id:'farofa_ovo', label:'Farofa de ovo — 2 ovos mexidos + 1 colher de sopa de farofa caseira com sementes e castanhas', tags:['ovos','castanhas']},
+    {id:'sanduiche_atum', label:'Sanduíche de atum — 2 fatias de pão de forma + 80 g de atum com requeijão + salada', tags:['atum','requeijao','pao']},
+    {id:'crepioca_atum', label:'Crepioca de atum — 2 ovos + goma de tapioca + atum + requeijão', tags:['ovos','tapioca','atum','requeijao']},
+    {id:'salgado_maromba', label:'Salgado maromba — 120 g de frango desfiado + requeijão, empanado em panko, na airfryer', tags:['frango','requeijao','panko']}
+  ];
+  var JANTAR_SPECIAL = {id:'hamburguer', label:'Hambúrguer artesanal de patinho 120 g + 2 fatias de pão de forma + 1 fatia de queijo + salada', tags:['carne','pao','queijo']};
+
+  var NEW_ITEM_DEFS = {
+    atum: {name:'Atum sólido em água', qty:'conforme as trocas de refeição'},
+    peixe: {name:'Peixe branco em filé', qty:'conforme as trocas de refeição'},
+    camarao: {name:'Camarão', qty:'conforme as trocas de refeição'},
+    tapioca: {name:'Goma de tapioca', qty:'1 pacote pequeno'},
+    panko: {name:'Farinha panko', qty:'1 pacote pequeno'}
+  };
+
+  function loadJSON(key, fallback){ try{ var raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }catch(e){ return fallback; } }
+  function saveJSON(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+
+  // ---- semana atual / próxima semana (estado global) ----
+  var WEEKS_KEY = 'dieta_rubens_weeks_v1';
+  var weeksData = loadJSON(WEEKS_KEY, null);
+  if(!weeksData || !weeksData.current || !weeksData.next){
+    var oldOv = loadJSON('dieta_rubens_overrides_v1', {});
+    var oldDone = loadJSON('dieta_rubens_done_v1', {});
+    weeksData = { current: { overrides: oldOv, done: oldDone, planned: true }, next: { overrides:{}, done:{}, planned:false } };
+  }
+  if(weeksData.current.planned === undefined) weeksData.current.planned = true;
+  if(weeksData.next.planned === undefined) weeksData.next.planned = false;
+  if(weeksData.current.shoppingGenerated === undefined) weeksData.current.shoppingGenerated = true;
+  if(weeksData.next.shoppingGenerated === undefined) weeksData.next.shoppingGenerated = false;
+
+  // reset único: limpa qualquer "próxima semana" de teste e volta pro estado vazio
+  var NEXT_RESET_FLAG = 'dieta_rubens_next_reset_v2';
+  if(!loadJSON(NEXT_RESET_FLAG, false)){
+    weeksData.next = { overrides:{}, done:{}, planned:false };
+    saveJSON(WEEKS_KEY, weeksData);
+    saveJSON(NEXT_RESET_FLAG, true);
+  }
+
+  function saveWeeksData(){ saveJSON(WEEKS_KEY, weeksData); }
+
+  var ACTIVE_WEEK_KEY = 'dieta_rubens_active_week_v1';
+  var activeWeek = loadJSON(ACTIVE_WEEK_KEY, 'current');
+
+  function curOverrides(){ return weeksData[activeWeek].overrides; }
+  function curDone(){ return weeksData[activeWeek].done; }
+
+  function setActiveWeek(w){
+    activeWeek = w;
+    saveJSON(ACTIVE_WEEK_KEY, activeWeek);
+    shop = shopAll[activeWeek];
+    syncWeekPills();
+    renderDay(currentDay);
+    applyShopToDom();
+    renderSummary();
+    renderExtras();
+  }
+  function syncWeekPills(){
+    document.querySelectorAll('.week-pager-label').forEach(function(el){
+      el.textContent = activeWeek === 'current' ? 'Semana atual' : 'Próxima semana';
+    });
+    document.querySelectorAll('.week-prev').forEach(function(b){ b.disabled = activeWeek === 'current'; });
+    document.querySelectorAll('.week-next').forEach(function(b){ b.disabled = activeWeek === 'next'; });
+  }
+
+  var VITAMINA_POS_KEY = 'dieta_rubens_vitamina_pos_v1';
+  var vitaminaPos = loadJSON(VITAMINA_POS_KEY, 0);
+
+  function bindDrag(handle, wrap){
+    if(!handle) return;
+    var card = handle.closest('.meal-card');
+    var startY = 0, startTop = 0, dragging = false;
+
+    handle.addEventListener('pointerdown', function(e){
+      e.preventDefault();
+      dragging = true;
+      startY = e.clientY;
+      startTop = card.offsetTop;
+      card.classList.add('dragging');
+      card.style.position = 'relative';
+      handle.setPointerCapture(e.pointerId);
+    });
+
+    handle.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      var delta = e.clientY - startY;
+      card.style.transform = 'translateY(' + delta + 'px)';
+
+      var siblings = Array.prototype.slice.call(wrap.querySelectorAll('.meal-card')).filter(function(c){ return c !== card; });
+      var pointerY = e.clientY;
+      var target = null, after = false;
+      siblings.forEach(function(sib){
+        var r = sib.getBoundingClientRect();
+        var mid = r.top + r.height/2;
+        if(pointerY > mid){ target = sib; after = true; } else if(target===null){ target = sib; after = false; }
+      });
+      siblings.forEach(function(sib){ sib.classList.remove('drag-target-above','drag-target-below'); });
+      if(target){ target.classList.add(after ? 'drag-target-below' : 'drag-target-above'); }
+    });
+
+    function endDrag(e){
+      if(!dragging) return;
+      dragging = false;
+      card.classList.remove('dragging');
+      card.style.transform = '';
+      card.style.position = '';
+
+      var pointerY = e.clientY;
+      var siblings = Array.prototype.slice.call(wrap.querySelectorAll('.meal-card')).filter(function(c){ return c !== card; });
+      siblings.forEach(function(sib){ sib.classList.remove('drag-target-above','drag-target-below'); });
+
+      var newIndex = siblings.length;
+      for(var i=0;i<siblings.length;i++){
+        var r = siblings[i].getBoundingClientRect();
+        if(pointerY < r.top + r.height/2){ newIndex = i; break; }
+      }
+      vitaminaPos = newIndex;
+      saveJSON(VITAMINA_POS_KEY, vitaminaPos);
+      renderDay(currentDay);
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+  }
+
+  function findById(arr, id){ for(var i=0;i<arr.length;i++){ if(arr[i].id===id) return arr[i]; } return null; }
+
+  function getMealDisplay(dayIdx, slot){
+    var ov = curOverrides()[dayIdx+'-'+slot];
+    if(!ov) return null;
+    if(ov.type === 'simple'){
+      var list = slot==='cafe' ? CAFE_OPTS : LANCHE_OPTS;
+      var opt = findById(list, ov.optionId);
+      if(!opt) return null;
+      return { desc: opt.label, tags: opt.tags };
+    }
+    if(ov.type === 'special'){
+      return { desc: JANTAR_SPECIAL.label, tags: JANTAR_SPECIAL.tags };
+    }
+    if(ov.type === 'combo'){
+      var p = findById(PROTEIN_OPTS, ov.proteinId);
+      var c = findById(CARB_OPTS, ov.carbId);
+      if(!p || !c) return null;
+      var g = c.g[slot] || '';
+      var desc = p.label + ' 150 g + ' + c.label.toLowerCase() + ' ' + g + ' + legumes verdes + salada crua';
+      return { desc: desc, tags: p.tags.concat(c.tags) };
+    }
+    return null;
+  }
+
+  function computeExtras(){
+    var existing = {frango:1,carne:1,arroz:1,mandioquinha:1,batata:1,macarrao:1,pao:1,queijo:1,wrap:1,requeijao:1,ovos:1,castanhas:1,leite:1,aveia:1,'pasta-amendoim':1,whey:1,creatina:1};
+    var found = {};
+    for(var d=0; d<7; d++){
+      ['cafe','almoco','lanche','jantar'].forEach(function(slot){
+        var disp = getMealDisplay(d, slot);
+        if(disp){
+          disp.tags.forEach(function(t){
+            if(!existing[t]) found[t] = true;
+          });
+        }
+      });
+    }
+    return Object.keys(found);
+  }
+
+  var currentDay = 0;
+  var pillRow = document.getElementById('dayPills');
+  dayShort.forEach(function(short, idx){
+    var btn = document.createElement('button');
+    btn.className = 'pill' + (idx===0?' active':'');
+    btn.textContent = short;
+    btn.addEventListener('click', function(){ setDay(idx); });
+    pillRow.appendChild(btn);
+  });
+
+  function renderComprasVisibility(){
+    var wd = weeksData[activeWeek];
+    var ready = activeWeek === 'current' ? !!wd.planned : (!!wd.planned && !!wd.shoppingGenerated);
+    document.getElementById('comprasSection').style.display = ready ? 'block' : 'none';
+    document.getElementById('comprasUnplanned').style.display = ready ? 'none' : 'block';
+    var msgEl = document.querySelector('#comprasUnplanned p');
+    if(activeWeek === 'next' && wd.planned && !isNextFullyResolved()){
+      msgEl.textContent = 'O cardápio da próxima semana ainda tem refeições por escolher. Complete todas na aba Cardápio para liberar a lista de compras.';
+    } else if(activeWeek === 'next' && wd.planned && !wd.shoppingGenerated){
+      msgEl.textContent = 'O cardápio da próxima semana está pronto. Volte ao Cardápio e toque em "Criar lista de compras desta semana" para gerar os itens.';
+    } else {
+      msgEl.textContent = 'A próxima semana ainda não foi planejada. Monte o cardápio dela na aba Cardápio para a lista de compras aparecer aqui.';
+    }
+  }
+
+  function renderDay(idx){
+    var pills = pillRow.querySelectorAll('.pill');
+    pills.forEach(function(p,i){ p.classList.toggle('active', i===idx); });
+
+    var isPlanned = !!weeksData[activeWeek].planned;
+    document.getElementById('unplannedPrompt').style.display = isPlanned ? 'none' : 'block';
+    document.getElementById('dayMealsGroup').style.display = isPlanned ? 'block' : 'none';
+    document.getElementById('cardapioHint').style.display = isPlanned ? 'block' : 'none';
+    renderComprasVisibility();
+    if(!isPlanned){
+      document.getElementById('repeatDayBtn').style.display = 'none';
+      document.getElementById('createShoppingListWrap').style.display = 'none';
+      return;
+    }
+
+    var executable = activeWeek === 'current';
+    var repeatBtn = document.getElementById('repeatDayBtn');
+    repeatBtn.style.display = executable ? 'none' : 'block';
+    repeatBtn.onclick = function(){ repeatDayFromCurrent(idx); };
+
+    var showCreateList = !executable && isNextFullyResolved() && !weeksData.next.shoppingGenerated;
+    document.getElementById('createShoppingListWrap').style.display = showCreateList ? 'block' : 'none';
+
+    var mealsWrap = document.getElementById('dayMeals');
+    mealsWrap.innerHTML = '';
+
+    var slots = meals[idx].map(function(m){ return {type:'meal', m:m}; });
+    var pos = Math.max(0, Math.min(vitaminaPos, slots.length));
+    slots.splice(pos, 0, {type:'vitamina'});
+
+    slots.forEach(function(s){
+      var card;
+      if(s.type === 'vitamina'){
+        var isDone = !!curDone()[idx+'-vitamina'];
+        card = document.createElement('div');
+        card.className = 'meal-card' + (isDone?' is-done':'');
+        card.dataset.type = 'vitamina';
+        card.innerHTML =
+          '<button class="done-circle' + (isDone?' on':'') + '"' + (executable?'':' disabled') + ' data-slot="vitamina" aria-label="Marcar como feita"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+          '<div class="meal-tap" style="cursor:default;">' +
+            '<div class="meal-body">' +
+              '<div class="meal-top-line"><span class="meal-name">Vitamina · horário livre</span><span class="kcal-badge">306 kcal</span></div>' +
+              '<div class="meal-desc-preview">200 ml de leite desnatado + 1 porção de whey + 2 colheres de sopa de aveia + 2 pedras de gelo de açaí + 1 colher de sobremesa de pasta de amendoim, batido com gelo.</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="drag-handle" aria-label="Arrastar para reordenar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="6" r="1.6" fill="currentColor"/><circle cx="16" cy="6" r="1.6" fill="currentColor"/><circle cx="8" cy="12" r="1.6" fill="currentColor"/><circle cx="16" cy="12" r="1.6" fill="currentColor"/><circle cx="8" cy="18" r="1.6" fill="currentColor"/><circle cx="16" cy="18" r="1.6" fill="currentColor"/></svg></div>';
+      } else {
+        var m = s.m, slot = m.i;
+        var key = idx + '-' + slot;
+        var isUnresolved = activeWeek === 'next' && weeksData.next.unresolved && weeksData.next.unresolved[key];
+        card = document.createElement('div');
+        card.dataset.type = 'meal';
+        if(isUnresolved){
+          card.className = 'meal-card meal-card-empty';
+          card.innerHTML =
+            '<button class="meal-tap meal-tap-empty" data-slot="' + slot + '">' +
+              '<div class="meal-body">' +
+                '<div class="meal-top-line"><span class="meal-name">' + SLOT_LABELS[slot] + '</span></div>' +
+                '<div class="meal-desc-preview empty-hint">Toque para escolher a refeição</div>' +
+              '</div>' +
+              '<svg class="meal-chevron" width="8" height="13" viewBox="0 0 9 15" fill="none"><path d="M1 1l6.5 6.5L1 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+            '</button>';
+        } else {
+          var override = getMealDisplay(idx, slot);
+          var desc = override ? override.desc : m.d;
+          var isDoneM = !!curDone()[key];
+          card.className = 'meal-card' + (isDoneM?' is-done':'');
+          card.innerHTML =
+            '<button class="done-circle' + (isDoneM?' on':'') + '"' + (executable?'':' disabled') + ' data-slot="' + slot + '" aria-label="Marcar como feita"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+            '<button class="meal-tap" data-slot="' + slot + '">' +
+              '<div class="meal-body">' +
+                '<div class="meal-top-line">' +
+                  '<div class="meal-name-wrap"><span class="meal-name">' + m.n + '</span>' +
+                    (override ? '<span class="changed-badge">Trocada</span>' : '') +
+                  '</div>' +
+                  '<span class="kcal-badge">' + KCAL[slot] + ' kcal</span>' +
+                '</div>' +
+                '<div class="meal-desc-preview">' + desc + '</div>' +
+              '</div>' +
+              '<svg class="meal-chevron" width="8" height="13" viewBox="0 0 9 15" fill="none"><path d="M1 1l6.5 6.5L1 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+            '</button>';
+        }
+      }
+      mealsWrap.appendChild(card);
+    });
+
+    mealsWrap.querySelectorAll('.meal-tap').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(btn.dataset.slot === 'vitamina') return;
+        openSwap(currentDay, btn.dataset.slot);
+      });
+    });
+    mealsWrap.querySelectorAll('.done-circle').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var key = currentDay + '-' + btn.dataset.slot;
+        var doneMap = curDone();
+        doneMap[key] = !doneMap[key];
+        saveWeeksData();
+        if(activeWeek === 'current' && isWeekFullyDone(doneMap)){
+          advanceWeek();
+        } else {
+          renderDay(currentDay);
+        }
+      });
+    });
+
+    bindDrag(mealsWrap.querySelector('.meal-card[data-type="vitamina"] .drag-handle'), mealsWrap);
+
+    var allCards = mealsWrap.querySelectorAll('.meal-card');
+    var marked = false;
+    allCards.forEach(function(c){
+      if(executable && !marked && !c.classList.contains('is-done')){
+        c.classList.add('next-meal');
+        marked = true;
+      } else {
+        c.classList.remove('next-meal');
+      }
+    });
+  }
+
+  function repeatDayFromCurrent(idx){
+    var curOv = weeksData.current.overrides;
+    var nextOv = weeksData.next.overrides;
+    ['cafe','almoco','lanche','jantar'].forEach(function(slot){
+      var key = idx + '-' + slot;
+      if(curOv[key]) nextOv[key] = JSON.parse(JSON.stringify(curOv[key]));
+      else delete nextOv[key];
+    });
+    saveWeeksData();
+    renderDay(currentDay);
+    renderExtras();
+  }
+
+  function setDay(idx){ currentDay = idx; renderDay(idx); }
+  renderDay(0);
+
+  // ---- swap sheet ----
+  var swapOverlay = document.getElementById('swapOverlay');
+  var swapBody = document.getElementById('swapBody');
+  var swapCtx = { day:0, slot:'cafe' };
+
+  function buildOptionRows(list, name, selectedId){
+    return list.map(function(o){
+      var checked = o.id === selectedId ? ' checked' : '';
+      return '<label class="option-row"><input type="radio" name="' + name + '" value="' + o.id + '"' + checked + '>' + o.label + '</label>';
+    }).join('');
+  }
+  function buildCarbRows(list, name, selectedId, slot){
+    return list.map(function(c){
+      var checked = c.id === selectedId ? ' checked' : '';
+      return '<label class="option-row"><input type="radio" name="' + name + '" value="' + c.id + '"' + checked + '>' + c.label + ' (' + c.g[slot] + ')</label>';
+    }).join('');
+  }
+
+  function openSwap(day, slot){
+    swapCtx.day = day; swapCtx.slot = slot;
+    var isUnresolvedEarly = activeWeek === 'next' && weeksData.next.unresolved && weeksData.next.unresolved[day+'-'+slot];
+    document.getElementById('swapTitle').textContent = (isUnresolvedEarly ? 'Escolher ' : 'Trocar ') + ({cafe:'café',almoco:'almoço',lanche:'lanche',jantar:'jantar'}[slot]) + ' · ' + dayNames[day];
+    var ov = curOverrides()[day+'-'+slot];
+
+    if(slot === 'cafe' || slot === 'lanche'){
+      var list = slot === 'cafe' ? CAFE_OPTS : LANCHE_OPTS;
+      var selectedId = ov && ov.type==='simple' ? ov.optionId : null;
+      swapBody.innerHTML = '<div class="card-list" style="padding:0 12px;">' + buildOptionRows(list, 'swapChoice', selectedId) + '</div>';
+    } else {
+      var isSpecial = slot==='jantar' && ov && ov.type==='special';
+      var proteinSel = ov && ov.type==='combo' ? ov.proteinId : null;
+      var carbSel = ov && ov.type==='combo' ? ov.carbId : null;
+      var html = '';
+      if(slot==='jantar'){
+        html += '<div class="special-toggle-row"><span>Hambúrguer artesanal (prato especial)</span>' +
+          '<label class="switch"><input type="checkbox" id="specialToggle"' + (isSpecial?' checked':'') + '><span class="slider"></span></label></div>';
+      }
+      html += '<div id="comboFields"' + (isSpecial ? ' style="display:none;"' : '') + '>';
+      html += '<div class="select-label">Proteína</div><div class="option-group">' +
+        buildOptionRows(PROTEIN_OPTS, 'proteinChoice', proteinSel) + '</div>';
+      html += '<div class="select-label">Carboidrato</div><div class="option-group">' +
+        buildCarbRows(CARB_OPTS, 'carbChoice', carbSel, slot) + '</div>';
+      html += '</div>';
+      swapBody.innerHTML = html;
+
+      if(slot==='jantar'){
+        document.getElementById('specialToggle').addEventListener('change', function(){
+          document.getElementById('comboFields').style.display = this.checked ? 'none' : 'block';
+          updateConfirmState();
+        });
+      }
+    }
+    document.getElementById('swapRestoreBtn').style.display = ov ? 'block' : 'none';
+    var isUnresolved = activeWeek === 'next' && weeksData.next.unresolved && weeksData.next.unresolved[day+'-'+slot];
+    document.getElementById('swapKeepBtn').style.display = isUnresolved ? 'block' : 'none';
+
+    var confirmBtn = document.getElementById('swapConfirmBtn');
+    confirmBtn.textContent = isUnresolved ? 'Confirmar refeição' : 'Confirmar troca';
+    function updateConfirmState(){
+      var hasSelection;
+      if(slot === 'cafe' || slot === 'lanche'){
+        hasSelection = !!swapBody.querySelector('input[name=swapChoice]:checked');
+      } else {
+        var specialEl = document.getElementById('specialToggle');
+        if(specialEl && specialEl.checked){
+          hasSelection = true;
+        } else {
+          hasSelection = !!swapBody.querySelector('input[name=proteinChoice]:checked') && !!swapBody.querySelector('input[name=carbChoice]:checked');
+        }
+      }
+      confirmBtn.disabled = !hasSelection;
+    }
+    updateConfirmState();
+    swapBody.querySelectorAll('input[type=radio]').forEach(function(r){
+      r.addEventListener('change', updateConfirmState);
+    });
+
+    swapOverlay.classList.add('open');
+  }
+
+  document.getElementById('swapCloseBtn').addEventListener('click', function(){ swapOverlay.classList.remove('open'); });
+  swapOverlay.addEventListener('click', function(e){ if(e.target===swapOverlay) swapOverlay.classList.remove('open'); });
+
+  document.getElementById('swapConfirmBtn').addEventListener('click', function(){
+    var key = swapCtx.day + '-' + swapCtx.slot;
+    var overrides = curOverrides();
+    if(swapCtx.slot === 'cafe' || swapCtx.slot === 'lanche'){
+      var checked = swapBody.querySelector('input[name=swapChoice]:checked');
+      if(checked){ overrides[key] = { type:'simple', optionId: checked.value }; }
+    } else if(swapCtx.slot === 'jantar' && document.getElementById('specialToggle') && document.getElementById('specialToggle').checked){
+      overrides[key] = { type:'special' };
+    } else {
+      var pChecked = swapBody.querySelector('input[name=proteinChoice]:checked');
+      var cChecked = swapBody.querySelector('input[name=carbChoice]:checked');
+      if(pChecked && cChecked){
+        overrides[key] = { type:'combo', proteinId:pChecked.value, carbId:cChecked.value };
+      }
+    }
+    if(activeWeek === 'next' && weeksData.next.unresolved) delete weeksData.next.unresolved[key];
+    saveWeeksData();
+    swapOverlay.classList.remove('open');
+    renderDay(currentDay);
+    renderExtras();
+  });
+
+  document.getElementById('swapRestoreBtn').addEventListener('click', function(){
+    var key = swapCtx.day + '-' + swapCtx.slot;
+    delete curOverrides()[key];
+    if(activeWeek === 'next' && weeksData.next.unresolved) delete weeksData.next.unresolved[key];
+    saveWeeksData();
+    swapOverlay.classList.remove('open');
+    renderDay(currentDay);
+    renderExtras();
+  });
+
+  document.getElementById('swapKeepBtn').addEventListener('click', function(){
+    var key = swapCtx.day + '-' + swapCtx.slot;
+    var curOv = weeksData.current.overrides[key];
+    if(curOv) weeksData.next.overrides[key] = JSON.parse(JSON.stringify(curOv));
+    else delete weeksData.next.overrides[key];
+    if(weeksData.next.unresolved) delete weeksData.next.unresolved[key];
+    saveWeeksData();
+    swapOverlay.classList.remove('open');
+    renderDay(currentDay);
+    renderExtras();
+  });
+
+  // ================= COMPRAS =================
+  var SHOP_KEY = 'dieta_rubens_shop_v5';
+  var shopAll = loadJSON(SHOP_KEY, null);
+  if(!shopAll || !shopAll.current || !shopAll.next){
+    var oldShop = loadJSON('dieta_rubens_shop_v4', null) || loadJSON('dieta_rubens_shop_v3', {checked:{}, prices:{}});
+    var oldCurrent = oldShop.current || oldShop;
+    shopAll = { current: { checked: oldCurrent.checked||{}, prices: oldCurrent.prices||{} }, next: { checked:{}, prices:{} } };
+  }
+  if(!loadJSON(NEXT_RESET_FLAG + '_shop', false)){
+    shopAll.next = { checked:{}, prices:{} };
+    saveJSON(SHOP_KEY, shopAll);
+    saveJSON(NEXT_RESET_FLAG + '_shop', true);
+  }
+  function saveShopAll(){ saveJSON(SHOP_KEY, shopAll); }
+  var shop = shopAll[activeWeek];
+
+  function parsePrice(str){
+    if(!str) return 0;
+    var n = parseFloat(String(str).replace(',', '.'));
+    return isNaN(n) ? 0 : n;
+  }
+  function formatBRL(n){
+    return 'R$ ' + n.toFixed(2).replace('.', ',');
+  }
+
+  function applyShopToDom(){
+    shopRows.forEach(function(row){
+      var key = row.dataset.key;
+      var input = row.querySelector('.price-input');
+      row.classList.toggle('checked', !!shop.checked[key]);
+      input.value = shop.prices[key] || '';
+    });
+  }
+
+  var shopRows = document.querySelectorAll('.shop-row');
+  var totalItems = shopRows.length;
+
+  var categoryOrder = ['Açougue','Hortifruti','Congelados','Mercearia','Padaria','Ovos e laticínios','Suplementos','Itens extras'];
+  var checkIcon = '<span class="check-ic"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+
+  function renderSummary(){
+    var checkedCount = 0, total = 0;
+    shopRows.forEach(function(row){
+      var key = row.dataset.key;
+      var price = parsePrice(shop.prices[key]);
+      total += price;
+      if(shop.checked[key]) checkedCount++;
+    });
+    var extraTotalCount = 0;
+    computeExtras().forEach(function(tag){
+      var key = 'extra-' + tag;
+      var price = parsePrice(shop.prices[key]);
+      total += price;
+      extraTotalCount++;
+      if(shop.checked[key]) checkedCount++;
+    });
+    var grandTotalItems = totalItems + extraTotalCount;
+    document.getElementById('comprasEntryCount').textContent = checkedCount + '/' + grandTotalItems;
+    document.getElementById('comprasEntryTotal').textContent = formatBRL(total);
+
+    var resetBtn = document.getElementById('resetShop');
+    resetBtn.classList.toggle('disabled', checkedCount === 0);
+  }
+
+  shopRows.forEach(function(row){
+    var key = row.dataset.key;
+    var input = row.querySelector('.price-input');
+    var checkCircle = row.querySelector('.check');
+    var textWrap = row.querySelector('.shop-text');
+
+    if(shop.checked[key]) row.classList.add('checked');
+    if(shop.prices[key]) input.value = shop.prices[key];
+
+    function toggle(){
+      var now = !row.classList.contains('checked');
+      row.classList.toggle('checked', now);
+      shop.checked[key] = now;
+      saveShopAll();
+      renderSummary();
+    }
+    checkCircle.addEventListener('click', toggle);
+    textWrap.addEventListener('click', toggle);
+
+    input.addEventListener('click', function(e){ e.stopPropagation(); });
+    input.addEventListener('input', function(){
+      shop.prices[key] = input.value;
+      saveShopAll();
+      renderSummary();
+    });
+  });
+
+  document.getElementById('resetShop').addEventListener('click', function(){
+    shopAll[activeWeek] = {checked:{}, prices:{}};
+    shop = shopAll[activeWeek];
+    saveShopAll();
+    shopRows.forEach(function(row){
+      row.classList.remove('checked');
+      row.querySelector('.price-input').value = '';
+    });
+    renderSummary();
+    renderExtras();
+  });
+
+  renderSummary();
+
+  function renderExtras(){
+    var extraTags = computeExtras();
+
+    var bannerEl = document.getElementById('extrasBanner');
+    var groupEl = document.getElementById('extrasGroup');
+    var listEl = document.getElementById('extrasList');
+
+    if(extraTags.length === 0){
+      bannerEl.innerHTML = '';
+      groupEl.style.display = 'none';
+      listEl.innerHTML = '';
+      document.getElementById('comprasDot').classList.remove('show');
+      return;
+    }
+
+    groupEl.style.display = 'block';
+    listEl.innerHTML = extraTags.map(function(tag){
+      var def = NEW_ITEM_DEFS[tag];
+      var checked = shop.checked['extra-'+tag];
+      return '<div class="shop-row' + (checked?' checked':'') + (checked?'':' needs-buy') + '" data-extra-key="' + tag + '">' +
+        '<div class="check"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
+        '<div class="shop-text"><span class="shop-name">' + def.name + '</span><span class="shop-qty">' + def.qty + '</span></div>' +
+        '<input class="price-input" inputmode="decimal" placeholder="R$" value="' + (shop.prices['extra-'+tag] || '') + '">' +
+      '</div>';
+    }).join('');
+
+    listEl.querySelectorAll('.shop-row').forEach(function(row){
+      var key = 'extra-' + row.dataset.extraKey;
+      var input = row.querySelector('.price-input');
+      function toggle(){
+        var now = !row.classList.contains('checked');
+        row.classList.toggle('checked', now);
+        row.classList.toggle('needs-buy', !now);
+        shop.checked[key] = now;
+        saveShopAll();
+        renderSummary();
+        updateComprasDot();
+      }
+      row.querySelector('.check').addEventListener('click', toggle);
+      row.querySelector('.shop-text').addEventListener('click', toggle);
+      input.addEventListener('click', function(e){ e.stopPropagation(); });
+      input.addEventListener('input', function(){
+        shop.prices[key] = input.value;
+        saveShopAll();
+        renderSummary();
+      });
+    });
+
+    function updateComprasDot(){
+      var pending = false;
+      listEl.querySelectorAll('.shop-row.needs-buy').forEach(function(){ pending = true; });
+      document.getElementById('comprasDot').classList.toggle('show', pending);
+    }
+    updateComprasDot();
+
+    bannerEl.innerHTML = '<div class="alert-banner"><strong>Trocas de refeição pedem itens novos</strong>Eles foram adicionados em "Itens extras", no fim da lista. Se preferir, restaure a refeição original na troca para que o item saia daqui.</div>';
+  }
+  renderExtras();
+
+  // ================= PLANNER =================
+  var fixedHabits = ['Dieta','Exercício físico','Sono (mín. 6h)','Ingestão de água','Sem açúcar','Evacuação regular'];
+  var customCount = 3;
+  var daysInMonth = 30;
+  var states = ['', 'g', 'y', 'r'];
+  var stateLabel = {'':'Marcar','g':'Feito','y':'Parcial','r':'Falha'};
+
+  var PLAN_KEY = 'dieta_rubens_planner_v3';
+  function loadPlan(){ try{ var raw = localStorage.getItem(PLAN_KEY); return raw ? JSON.parse(raw) : { dots:{}, labels:{} }; }catch(e){ return { dots:{}, labels:{} }; } }
+  function savePlan(s){ try{ localStorage.setItem(PLAN_KEY, JSON.stringify(s)); }catch(e){} }
+  var plan = loadPlan();
+  if(!plan.dots) plan.dots = {};
+  if(!plan.labels) plan.labels = {};
+  if(!plan.confirmed) plan.confirmed = {};
+
+  function unlockedUpTo(){
+    for(var day=1; day<=daysInMonth; day++){
+      if(!plan.confirmed[day]) return day;
+    }
+    return daysInMonth;
+  }
+
+  var currentPlanDay = 1;
+  var jumpGrid = document.getElementById('jumpGrid');
+  for(var d=1; d<=daysInMonth; d++){
+    (function(day){
+      var btn = document.createElement('button');
+      btn.className = 'jump-dot' + (day===1?' active':'');
+      btn.textContent = day;
+      btn.addEventListener('click', function(){ if(day <= unlockedUpTo()) setPlanDay(day); });
+      jumpGrid.appendChild(btn);
+    })(d);
+  }
+
+  function renderPlanDay(day){
+    document.getElementById('planName').textContent = 'Dia ' + day;
+    document.getElementById('planSub').textContent = 'Dia ' + day + ' de ' + daysInMonth + ' do plano';
+
+    var unlocked = unlockedUpTo();
+    var jdots = jumpGrid.querySelectorAll('.jump-dot');
+    jdots.forEach(function(b, i){
+      var dNum = i+1;
+      b.classList.toggle('active', dNum===day);
+      b.classList.toggle('confirmed', !!plan.confirmed[dNum]);
+      b.classList.toggle('locked', dNum > unlocked);
+    });
+    document.getElementById('planPrev').disabled = day===1;
+    document.getElementById('planNext').disabled = day===daysInMonth || (day===unlocked && !plan.confirmed[day]);
+
+    var confirmBtn = document.getElementById('confirmDayBtn');
+    if(plan.confirmed[day]){
+      confirmBtn.textContent = '✓ Dia confirmado';
+      confirmBtn.classList.add('done');
+    } else {
+      confirmBtn.textContent = 'Confirmar preenchimento do dia';
+      confirmBtn.classList.remove('done');
+    }
+    confirmBtn.onclick = function(){
+      plan.confirmed[day] = true;
+      savePlan(plan);
+      if(day < daysInMonth){
+        setPlanDay(day+1);
+      } else {
+        renderPlanDay(day);
+      }
+    };
+
+    var list = document.getElementById('habitList');
+    list.innerHTML = '';
+    var totalRows = fixedHabits.length + customCount;
+    for(var r=0; r<totalRows; r++){
+      var row = document.createElement('div');
+      row.className = 'habit-row';
+
+      if(r < fixedHabits.length){
+        var nameSpan = document.createElement('div');
+        nameSpan.className = 'habit-name';
+        nameSpan.textContent = fixedHabits[r];
+        row.appendChild(nameSpan);
+      } else {
+        var ci = r - fixedHabits.length;
+        var input = document.createElement('input');
+        input.className = 'habit-label';
+        input.type = 'text';
+        input.placeholder = 'Meta pessoal ' + (ci+1);
+        if(plan.labels['c'+ci]) input.value = plan.labels['c'+ci];
+        input.addEventListener('input', function(idx){
+          return function(){ plan.labels['c'+idx] = this.value; savePlan(plan); };
+        }(ci));
+        row.appendChild(input);
+      }
+
+      var key = r + '-' + day;
+      var saved = plan.dots[key] || '';
+      var statusBtn = document.createElement('button');
+      statusBtn.className = 'status-btn' + (saved ? ' ' + saved : '');
+      statusBtn.textContent = stateLabel[saved];
+      statusBtn.dataset.state = saved;
+      statusBtn.addEventListener('click', function(ck, btnRef){
+        return function(){
+          var cur = btnRef.dataset.state || '';
+          var idx = states.indexOf(cur);
+          var next = states[(idx+1) % states.length];
+          btnRef.dataset.state = next;
+          btnRef.className = 'status-btn' + (next ? ' ' + next : '');
+          btnRef.textContent = stateLabel[next];
+          plan.dots[ck] = next;
+          savePlan(plan);
+        };
+      }(key, statusBtn));
+      row.appendChild(statusBtn);
+
+      list.appendChild(row);
+    }
+  }
+  function setPlanDay(day){ currentPlanDay = day; renderPlanDay(day); }
+  document.getElementById('planPrev').addEventListener('click', function(){ if(currentPlanDay>1) setPlanDay(currentPlanDay-1); });
+  document.getElementById('planNext').addEventListener('click', function(){
+    if(currentPlanDay<daysInMonth && currentPlanDay<unlockedUpTo()) setPlanDay(currentPlanDay+1);
+  });
+  renderPlanDay(1);
+
+  // ================= SELETOR DE SEMANA (global) =================
+  document.querySelectorAll('.week-prev').forEach(function(b){
+    b.addEventListener('click', function(){ setActiveWeek('current'); });
+  });
+  document.querySelectorAll('.week-next').forEach(function(b){
+    b.addEventListener('click', function(){ setActiveWeek('next'); });
+  });
+  syncWeekPills();
+  applyShopToDom();
+
+  function advanceWeek(){
+    weeksData.current = { overrides: weeksData.next.overrides, done: {}, planned: weeksData.next.planned, unresolved: weeksData.next.unresolved || {}, shoppingGenerated: true };
+    weeksData.next = { overrides: {}, done: {}, planned: false, unresolved: {}, shoppingGenerated: false };
+    saveWeeksData();
+
+    shopAll.current = shopAll.next;
+    shopAll.next = { checked:{}, prices:{} };
+    saveShopAll();
+
+    setActiveWeek('current');
+  }
+
+  function isWeekFullyDone(doneMap){
+    for(var d=0; d<7; d++){
+      var check = ['cafe','almoco','lanche','jantar','vitamina'];
+      for(var i=0;i<check.length;i++){
+        if(!doneMap[d+'-'+check[i]]) return false;
+      }
+    }
+    return true;
+  }
+
+  document.getElementById('repeatWeekBtn').addEventListener('click', function(){
+    weeksData.next.overrides = JSON.parse(JSON.stringify(weeksData.current.overrides));
+    weeksData.next.unresolved = {};
+    weeksData.next.planned = true;
+    weeksData.next.shoppingGenerated = false;
+    saveWeeksData();
+    renderDay(currentDay);
+    renderExtras();
+  });
+  document.getElementById('manualWeekBtn').addEventListener('click', function(){
+    weeksData.next.overrides = {};
+    weeksData.next.unresolved = {};
+    for(var d=0; d<7; d++){
+      ['cafe','almoco','lanche','jantar'].forEach(function(slot){
+        weeksData.next.unresolved[d+'-'+slot] = true;
+      });
+    }
+    weeksData.next.planned = true;
+    weeksData.next.shoppingGenerated = false;
+    saveWeeksData();
+    renderDay(currentDay);
+    renderExtras();
+  });
+
+  function isNextFullyResolved(){
+    var unresolved = weeksData.next.unresolved || {};
+    for(var k in unresolved){ if(unresolved[k]) return false; }
+    return true;
+  }
+
+  document.getElementById('createShoppingListBtn').addEventListener('click', function(){
+    weeksData.next.shoppingGenerated = true;
+    saveWeeksData();
+    renderDay(currentDay);
+    renderExtras();
+  });
+
+})();
+</script>
+</body>
+</html>
