@@ -117,6 +117,10 @@
     font-size:12px; font-weight:600; padding:8px 0; border-radius:10px; font-family:inherit;
   }
   .pill-row .pill.active{ background:var(--blue); color:#fff; }
+  .pill-row .pill.pill-inactive{ opacity:0.35; }
+  .option-row.selected{ background:var(--card); }
+  .option-row.selected .option-check{ opacity:1; }
+  .option-check{ margin-left:auto; color:var(--green); opacity:0; flex-shrink:0; }
 
   .meal-card{
     display:flex; align-items:center; gap:11px; margin-bottom:12px;
@@ -131,6 +135,12 @@
   .meal-card-empty .meal-name{ color:var(--label-secondary); }
   .empty-hint{ color:var(--blue); font-weight:600; }
   .meal-card.next-meal{ box-shadow: 0 0 0 1.5px var(--blue); }
+  .meal-card.day-inactive{ opacity:0.4; }
+  .meal-card.day-inactive .meal-tap{ pointer-events:none; }
+  .inactive-badge{
+    font-size:10px; font-weight:700; color:var(--label-secondary); background:var(--fill-seg);
+    padding:2px 6px; border-radius:999px; flex-shrink:0; text-transform:uppercase; letter-spacing:.02em;
+  }
   .meal-tap{
     flex:1; min-width:0; display:flex; align-items:center; gap:12px; text-align:left;
     background:none; border:none; padding:0; font-family:inherit;
@@ -379,6 +389,16 @@
   </div>
 </div>
 
+<div class="sheet-overlay" id="startWeekOverlay">
+  <div class="sheet" id="startWeekSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Esta semana começa em</div>
+    <p style="font-size:13px; color:var(--label-secondary); margin:-8px 2px 14px; line-height:1.4;">Os dias antes do início ficam marcados como não aplicáveis e saem da lista de compras desta semana.</p>
+    <div class="option-group" id="startWeekOptions"></div>
+    <button class="sheet-close" id="startWeekCloseBtn">Cancelar</button>
+  </div>
+</div>
+
 <main>
 
   <!-- CARDÁPIO -->
@@ -391,6 +411,8 @@
     </div>
 
     <div class="pill-row" id="dayPills"></div>
+
+    <button class="advance-week-link" id="startWeekBtn" style="display:none; margin:0 16px 10px;">Início da semana: Segunda ›</button>
 
     <p class="cardapio-hint" id="cardapioHint">Toque numa refeição para trocar o prato. Arraste a vitamina para reordenar.</p>
 
@@ -692,6 +714,7 @@
   if(weeksData.next.planned === undefined) weeksData.next.planned = false;
   if(weeksData.current.shoppingGenerated === undefined) weeksData.current.shoppingGenerated = true;
   if(weeksData.next.shoppingGenerated === undefined) weeksData.next.shoppingGenerated = false;
+  if(weeksData.current.activeFromDay === undefined) weeksData.current.activeFromDay = 0;
 
   // reset único: limpa qualquer "próxima semana" de teste e volta pro estado vazio
   var NEXT_RESET_FLAG = 'dieta_rubens_next_reset_v2';
@@ -814,7 +837,8 @@
   function computeExtras(){
     var existing = {frango:1,carne:1,arroz:1,mandioquinha:1,batata:1,macarrao:1,pao:1,queijo:1,wrap:1,requeijao:1,ovos:1,castanhas:1,leite:1,aveia:1,'pasta-amendoim':1,whey:1,creatina:1};
     var found = {};
-    for(var d=0; d<7; d++){
+    var startDay = (activeWeek === 'current') ? (weeksData.current.activeFromDay || 0) : 0;
+    for(var d=startDay; d<7; d++){
       ['cafe','almoco','lanche','jantar'].forEach(function(slot){
         var disp = getMealDisplay(d, slot);
         if(disp){
@@ -837,6 +861,33 @@
     pillRow.appendChild(btn);
   });
 
+  var startWeekOverlay = document.getElementById('startWeekOverlay');
+  var startWeekOptions = document.getElementById('startWeekOptions');
+  dayNames.forEach(function(name, idx){
+    var row = document.createElement('button');
+    row.className = 'option-row';
+    row.style.cssText = 'width:100%; border:none; font-family:inherit; text-align:left; color:var(--label); background:var(--card); -webkit-appearance:none; appearance:none;';
+    row.innerHTML = name +
+      '<svg class="option-check" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    row.addEventListener('click', function(){
+      weeksData.current.activeFromDay = idx;
+      saveWeeksData();
+      renderExtras();
+      startWeekOverlay.classList.remove('open');
+      renderDay(currentDay);
+    });
+    startWeekOptions.appendChild(row);
+  });
+  document.getElementById('startWeekBtn').addEventListener('click', function(){
+    startWeekOptions.querySelectorAll('.option-row').forEach(function(r, i){
+      r.classList.toggle('selected', i === (weeksData.current.activeFromDay||0));
+    });
+    startWeekOverlay.classList.add('open');
+  });
+  document.getElementById('startWeekCloseBtn').addEventListener('click', function(){
+    startWeekOverlay.classList.remove('open');
+  });
+
   function renderComprasVisibility(){
     var wd = weeksData[activeWeek];
     var ready = activeWeek === 'current' ? !!wd.planned : (!!wd.planned && !!wd.shoppingGenerated);
@@ -854,13 +905,26 @@
 
   function renderDay(idx){
     var pills = pillRow.querySelectorAll('.pill');
-    pills.forEach(function(p,i){ p.classList.toggle('active', i===idx); });
+    pills.forEach(function(p,i){
+      p.classList.toggle('active', i===idx);
+      p.classList.toggle('pill-inactive', activeWeek === 'current' && i < (weeksData.current.activeFromDay||0));
+    });
 
     var isPlanned = !!weeksData[activeWeek].planned;
     document.getElementById('unplannedPrompt').style.display = isPlanned ? 'none' : 'block';
     document.getElementById('dayMealsGroup').style.display = isPlanned ? 'block' : 'none';
     document.getElementById('cardapioHint').style.display = isPlanned ? 'block' : 'none';
     renderComprasVisibility();
+
+    var startWeekBtn = document.getElementById('startWeekBtn');
+    if(isPlanned && activeWeek === 'current'){
+      startWeekBtn.style.display = 'block';
+      var afd = weeksData.current.activeFromDay || 0;
+      startWeekBtn.textContent = 'Início da semana: ' + dayNames[afd] + ' ›';
+    } else {
+      startWeekBtn.style.display = 'none';
+    }
+
     if(!isPlanned){
       document.getElementById('repeatDayBtn').style.display = 'none';
       document.getElementById('createShoppingListWrap').style.display = 'none';
@@ -868,6 +932,8 @@
     }
 
     var executable = activeWeek === 'current';
+    var dayActive = activeWeek !== 'current' || idx >= (weeksData.current.activeFromDay||0);
+    var doneEditable = executable && dayActive;
     var repeatBtn = document.getElementById('repeatDayBtn');
     repeatBtn.style.display = executable ? 'none' : 'block';
     repeatBtn.onclick = function(){ repeatDayFromCurrent(idx); };
@@ -887,10 +953,10 @@
       if(s.type === 'vitamina'){
         var isDone = !!curDone()[idx+'-vitamina'];
         card = document.createElement('div');
-        card.className = 'meal-card' + (isDone?' is-done':'');
+        card.className = 'meal-card' + (isDone?' is-done':'') + (dayActive?'':' day-inactive');
         card.dataset.type = 'vitamina';
         card.innerHTML =
-          '<button class="done-circle' + (isDone?' on':'') + '"' + (executable?'':' disabled') + ' data-slot="vitamina" aria-label="Marcar como feita"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+          '<button class="done-circle' + (isDone?' on':'') + '"' + (doneEditable?'':' disabled') + ' data-slot="vitamina" aria-label="Marcar como feita"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
           '<div class="meal-tap" style="cursor:default;">' +
             '<div class="meal-body">' +
               '<div class="meal-top-line"><span class="meal-name">Vitamina · horário livre</span><span class="kcal-badge">306 kcal</span></div>' +
@@ -918,14 +984,15 @@
           var override = getMealDisplay(idx, slot);
           var desc = override ? override.desc : m.d;
           var isDoneM = !!curDone()[key];
-          card.className = 'meal-card' + (isDoneM?' is-done':'');
+          card.className = 'meal-card' + (isDoneM?' is-done':'') + (dayActive?'':' day-inactive');
           card.innerHTML =
-            '<button class="done-circle' + (isDoneM?' on':'') + '"' + (executable?'':' disabled') + ' data-slot="' + slot + '" aria-label="Marcar como feita"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+            '<button class="done-circle' + (isDoneM?' on':'') + '"' + (doneEditable?'':' disabled') + ' data-slot="' + slot + '" aria-label="Marcar como feita"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
             '<button class="meal-tap" data-slot="' + slot + '">' +
               '<div class="meal-body">' +
                 '<div class="meal-top-line">' +
                   '<div class="meal-name-wrap"><span class="meal-name">' + m.n + '</span>' +
                     (override ? '<span class="changed-badge">Trocada</span>' : '') +
+                    (dayActive ? '' : '<span class="inactive-badge">Não aplicável</span>') +
                   '</div>' +
                   '<span class="kcal-badge">' + KCAL[slot] + ' kcal</span>' +
                 '</div>' +
@@ -963,7 +1030,7 @@
     var allCards = mealsWrap.querySelectorAll('.meal-card');
     var marked = false;
     allCards.forEach(function(c){
-      if(executable && !marked && !c.classList.contains('is-done')){
+      if(executable && dayActive && !marked && !c.classList.contains('is-done')){
         c.classList.add('next-meal');
         marked = true;
       } else {
@@ -1152,6 +1219,37 @@
   var shopRows = document.querySelectorAll('.shop-row');
   var totalItems = shopRows.length;
 
+  // ---- quantidades da lista base recalculadas pelos dias ativos da semana ----
+  function fmtComma(n, dec){ return n.toFixed(dec).replace('.', ','); }
+  function roundStep(n, step){ return Math.round(n/step)*step; }
+  var BASE_QTY = {
+    frango:       function(d){ return '≈ ' + fmtComma(1.9*d/7, 1) + ' kg crus'; },
+    carne:        function(d){ return '≈ ' + fmtComma(1.3*d/7, 1) + ' kg crus — qualquer um desses cortes vale, pela dieta'; },
+    mandioquinha: function(d){ return roundStep(550*d/7, 10) + ' g'; },
+    batata:       function(d){ return roundStep(250*d/7, 10) + ' g'; },
+    tomate:       function(d){ return Math.ceil(4*d/7) + ' unidades'; },
+    'verdes-cong':function(d){ return Math.ceil(2*d/7) + ' pacotes'; },
+    wrap:         function(d){ return Math.ceil(4*d/7) + ' unidades, ou use pão de forma'; },
+    ovos:         function(d){ return Math.ceil(24*d/7) + ' na semana'; },
+    leite:        function(d){ return fmtComma(1.5*d/7, 1) + ' litro'; },
+    queijo:       function(d){ return Math.ceil(4*d/7) + ' fatias'; },
+    whey:         function(d){ return 'confirmar se cobre ' + d + ' porções'; }
+  };
+  function activeShoppingDays(){
+    if(activeWeek === 'current') return 7 - (weeksData.current.activeFromDay || 0);
+    return 7;
+  }
+  function applyQtyScaling(){
+    var days = activeShoppingDays();
+    shopRows.forEach(function(row){
+      var key = row.dataset.key;
+      var fn = BASE_QTY[key];
+      if(!fn) return;
+      var qtyEl = row.querySelector('.shop-qty');
+      if(qtyEl) qtyEl.textContent = fn(days);
+    });
+  }
+
   var categoryOrder = ['Açougue','Hortifruti','Congelados','Mercearia','Padaria','Ovos e laticínios','Suplementos','Itens extras'];
   var checkIcon = '<span class="check-ic"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
 
@@ -1221,6 +1319,7 @@
   renderSummary();
 
   function renderExtras(){
+    applyQtyScaling();
     var extraTags = computeExtras();
 
     var bannerEl = document.getElementById('extrasBanner');
@@ -1412,7 +1511,7 @@
   applyShopToDom();
 
   function advanceWeek(){
-    weeksData.current = { overrides: weeksData.next.overrides, done: {}, planned: weeksData.next.planned, unresolved: weeksData.next.unresolved || {}, shoppingGenerated: true };
+    weeksData.current = { overrides: weeksData.next.overrides, done: {}, planned: weeksData.next.planned, unresolved: weeksData.next.unresolved || {}, shoppingGenerated: true, activeFromDay: 0 };
     weeksData.next = { overrides: {}, done: {}, planned: false, unresolved: {}, shoppingGenerated: false };
     saveWeeksData();
 
@@ -1424,7 +1523,8 @@
   }
 
   function isWeekFullyDone(doneMap){
-    for(var d=0; d<7; d++){
+    var startDay = weeksData.current.activeFromDay || 0;
+    for(var d=startDay; d<7; d++){
       var check = ['cafe','almoco','lanche','jantar','vitamina'];
       for(var i=0;i<check.length;i++){
         if(!doneMap[d+'-'+check[i]]) return false;
