@@ -414,6 +414,8 @@
 
     <button class="advance-week-link" id="startWeekBtn" style="display:none; margin:0 16px 10px;">Início da semana: Segunda ›</button>
 
+    <button class="advance-week-link" id="finishWeekBtn" style="display:none; margin:0 16px 10px; color:var(--red);">Finalizar semana agora</button>
+
     <p class="cardapio-hint" id="cardapioHint">Toque numa refeição para trocar o prato. Arraste a vitamina para reordenar.</p>
 
     <button class="advance-week-link" id="repeatDayBtn" style="display:none; margin:0 16px 10px;">Repetir este dia da semana atual</button>
@@ -716,6 +718,22 @@
   if(weeksData.next.shoppingGenerated === undefined) weeksData.next.shoppingGenerated = false;
   if(weeksData.current.activeFromDay === undefined) weeksData.current.activeFromDay = 0;
 
+  // reset único: desfaz o início de semana de teste e volta a semana atual pro normal (segunda)
+  var AFD_RESET_FLAG = 'dieta_rubens_afd_reset_v1';
+  if(!loadJSON(AFD_RESET_FLAG, false)){
+    weeksData.current.activeFromDay = 0;
+    saveJSON(WEEKS_KEY, weeksData);
+    saveJSON(AFD_RESET_FLAG, true);
+  }
+
+  // reset único: limpa o dia de início de teste e volta a semana atual pro estado normal (segunda)
+  var START_DAY_RESET_FLAG = 'dieta_rubens_start_day_reset_v1';
+  if(!loadJSON(START_DAY_RESET_FLAG, false)){
+    weeksData.current.activeFromDay = 0;
+    saveJSON(WEEKS_KEY, weeksData);
+    saveJSON(START_DAY_RESET_FLAG, true);
+  }
+
   // reset único: limpa qualquer "próxima semana" de teste e volta pro estado vazio
   var NEXT_RESET_FLAG = 'dieta_rubens_next_reset_v2';
   if(!loadJSON(NEXT_RESET_FLAG, false)){
@@ -917,12 +935,18 @@
     renderComprasVisibility();
 
     var startWeekBtn = document.getElementById('startWeekBtn');
+    var finishWeekBtn = document.getElementById('finishWeekBtn');
     if(isPlanned && activeWeek === 'current'){
       startWeekBtn.style.display = 'block';
       var afd = weeksData.current.activeFromDay || 0;
       startWeekBtn.textContent = 'Início da semana: ' + dayNames[afd] + ' ›';
+      finishWeekBtn.style.display = 'block';
+      var nextPlanned = !!weeksData.next.planned;
+      finishWeekBtn.textContent = nextPlanned ? 'Finalizar semana agora' : 'Planeje a próxima semana para poder finalizar';
+      finishWeekBtn.style.color = nextPlanned ? 'var(--red)' : 'var(--label-tertiary)';
     } else {
       startWeekBtn.style.display = 'none';
+      finishWeekBtn.style.display = 'none';
     }
 
     if(!isPlanned){
@@ -1521,6 +1545,15 @@
 
     setActiveWeek('current');
   }
+
+  document.getElementById('finishWeekBtn').addEventListener('click', function(){
+    if(!weeksData.next.planned){
+      alert('Você ainda não planejou a próxima semana. Monte o cardápio dela primeiro (aba Cardápio, seletor "Próxima semana") para poder finalizar a semana atual.');
+      return;
+    }
+    var ok = confirm('Finalizar esta semana agora? Refeições não marcadas como feitas serão descartadas e a próxima semana vira a atual.');
+    if(ok) advanceWeek();
+  });
 
   function isWeekFullyDone(doneMap){
     var startDay = weeksData.current.activeFromDay || 0;
